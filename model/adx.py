@@ -14,11 +14,17 @@ from utils import headers
 
 class AdxModel(WebOperation):
     def __init__(self, email, password):
+        super(AdxModel, self).__init__()
         self.email = email
         self.password = password
         self.unit_ids = defaultdict(dict)
         self.result = defaultdict(list)
-        super(AdxModel, self).__init__()
+        self.init_config()
+
+
+    def init_config(self):
+        self.vendor_name = 'adx'
+        self.home_url = 'https://www.google.com/adx/Main.html#INVENTORY/ListTagsPlace:mobile'
 
     def send_keys(self, element, value):
         try:
@@ -27,10 +33,6 @@ class AdxModel(WebOperation):
         except WebDriverException as e:
             logger.error('send_keys,errinfo:{}'.format(e.message))
             return False
-
-    @property
-    def home_url(self):
-        return 'https://www.google.com/adx/Main.html#INVENTORY/ListTagsPlace:mobile'
 
     @property
     def account_id(self):
@@ -325,7 +327,7 @@ class AdxModel(WebOperation):
     def save_units_id(self, data):
         result = list()
         for name, unit_id in data.iteritems():
-            temp = dict(zip(headers, [self.email, 'adx', name, unit_id]))
+            temp = dict(zip(headers, [self.email, self.vendor_name, name, unit_id]))
             result.append(temp)
         write_csv_data(result)
 

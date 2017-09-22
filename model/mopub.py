@@ -14,11 +14,15 @@ from utils import write_csv_data
 
 class MopubModel(WebOperation):
     def __init__(self, email, password):
-        self.url = 'https://app.mopub.com/inventory/'
+        super(MopubModel, self).__init__()
         self.email = email
         self.password = password
         self.result = defaultdict(list)
-        super(MopubModel, self).__init__()
+        self.init_config()
+
+    def init_config(self):
+        self.vendor_name = 'mopub'
+        self.url = 'https://app.mopub.com/inventory/'
 
     @HandleException.retry_count
     def login_website(self, username, password):
@@ -238,9 +242,6 @@ class MopubModel(WebOperation):
             logger.info('mopub get units id success')
         return data
 
-    def save_to_mongo(self):
-        self.save(self.result)
-
     def close(self):
         try:
             self.driver.quit()
@@ -284,7 +285,7 @@ class MopubModel(WebOperation):
     def save_units_id(self, data):
         result = list()
         for name, unit_id in data.iteritems():
-            temp = dict(zip(headers, [self.email, 'mopub', name, unit_id]))
+            temp = dict(zip(headers, [self.email, self.vendor_name, name, unit_id]))
             result.append(temp)
         write_csv_data(result)
 

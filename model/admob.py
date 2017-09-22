@@ -12,10 +12,16 @@ from utils import write_csv_data
 
 class AdmobModel(WebOperation):
     def __init__(self, email, password):
+        super(AdmobModel, self).__init__()
         self.unit_ids = defaultdict(dict)
         self.email = email
         self.password = password
-        super(AdmobModel, self).__init__()
+        self.init_config()
+
+    def init_config(self):
+        self.vendor_name = 'admob'
+        self.home_url = 'https://apps.admob.com/#monetize/app:view/id={}'
+        self.create_url = 'https://apps.admob.com/#monetize/app:create/id={}'
 
     @property
     def ad_map(self):
@@ -31,14 +37,6 @@ class AdmobModel(WebOperation):
             'Native': 'Native'
         }
         return data
-
-    @property
-    def home_url(self):
-        return 'https://apps.admob.com/#monetize/app:view/id={}'
-
-    @property
-    def create_url(self):
-        return 'https://apps.admob.com/#monetize/app:create/id={}'
 
     @property
     def account_id(self):
@@ -395,7 +393,7 @@ class AdmobModel(WebOperation):
         result = list()
         for app_id, units in data.iteritems():
             for name, unit_id in units.iteritems():
-                temp = dict(zip(headers, [self.email, 'admob', name, unit_id]))
+                temp = dict(zip(headers, [self.email, self.vendor_name, name, unit_id]))
                 result.append(temp)
         write_csv_data(result)
 
