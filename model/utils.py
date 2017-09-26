@@ -3,7 +3,7 @@ import csv
 import yaml
 import os
 import logging 
-logging.basicConfig(filename='autocreate.log',filemode='w',level=logging.DEBUG)
+logging.basicConfig(filename='autocreate.log',filemode='w',level=logging.INFO)
 logger = logging
 
 headers = ['account', 'platform', 'adunit', 'id']

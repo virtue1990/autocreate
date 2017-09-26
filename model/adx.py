@@ -98,7 +98,8 @@ class AdxModel(WebOperation):
                 link_name = el.text
                 link_id = el.get_property('id')
                 link_id = link_id.split('-')[-1]
-                data[link_name] = link_id
+                data[link_name] = 'ca-mb-app-{account_id}/{unit_id}'.format(
+                    account_id=self.account_id, unit_id=link_id)
             return data
         except Exception, e:
             logger.error('adx get unit id by names,errinfo:{}'.format(e.message))
@@ -131,7 +132,7 @@ class AdxModel(WebOperation):
 
             # find the name has already used
             value = '//div[contains(text(),"This name is already used")]'
-            el = self.find_by_xpath(value, timeout=10)
+            el = self.find_by_xpath(value, timeout=5)
             if el:
                 raise Exception('the name is already used')
             else:
