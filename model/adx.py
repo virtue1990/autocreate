@@ -34,6 +34,10 @@ class AdxModel(WebOperation):
             logger.error('send_keys,errinfo:{}'.format(e.message))
             return False
 
+    @HandleException.retry_count
+    def login_website(self):
+        return self.login_google(self.email, self.password)
+
     @property
     def account_id(self):
         try:
@@ -66,8 +70,23 @@ class AdxModel(WebOperation):
             return False
 
     @HandleException.retry_count
-    def login_website(self):
-        return self.login_google(self.email, self.password)
+    def go_to_rules_url(self):
+        try:
+            rule_url = 'https://www.google.com/adx/Main.html#RULES/PricingRuleListPlace:mobile'
+            if rule_url == self.driver.current_url:
+                return True
+            self.driver.get(rule_url)
+            # find the create button
+            value = 'add-new-rule-button'
+            el = self.find_by_id(value, timeout=20)
+            if not el:
+                raise Exception('adx find add new rule button')
+            return True
+        except Exception,e:
+            logger.error('adx go to rules url failed')
+            logger.error(e.message)
+            return False
+
 
     @HandleException.retry_count
     def get_units_id(self):
@@ -139,6 +158,7 @@ class AdxModel(WebOperation):
                 value = '//div[@role="button"][contains(text(),"Close")]'
                 el = self.find_by_xpath(value,timeout=20)
                 res = self.click(el)
+            logger.info('{} create success'.format(ad_name))
             return True
         except Exception, e:
             logger.error('adx create unit failed,errinfo:{}'.format(e.message))
@@ -155,7 +175,7 @@ class AdxModel(WebOperation):
 
             # load all the floors
             value = '//div/div[text()="Load All"]' # 不是简单的改造成新的,老的问题需要兼顾
-            el = self.find_by_xpath(value)
+            el = self.find_by_xpath(value, timeout=20)
             res = self.click(el)
             if not res:
                 raise Exception('adx not find load all button or other error')
@@ -172,18 +192,19 @@ class AdxModel(WebOperation):
     def create_floor(self, ad_name, floor=0.05):
         # create new floor for ad_name
         try:
-            floor_url = 'https://www.google.com/adx/Main.html#RULES/PricingRuleListPlace:mobile'
-            self.driver.get(floor_url)
+            # floor_url = 'https://www.google.com/adx/Main.html#RULES/PricingRuleListPlace:mobile'
+            # self.driver.get(floor_url)
+            self.go_to_rules_url()
             # find the create button
             value = 'add-new-rule-button'
-            el = self.find_by_id(value)
+            el = self.find_by_id(value, timeout=20)
             res = self.click(el)
             if not res:
                 raise Exception('adx click add new rule button')
 
             # input the rule name
             value = 'rule-name'
-            el = self.find_by_id(value)
+            el = self.find_by_id(value, timeout=30)
             res = self.send_keys(el, ad_name)
             if not res:
                 raise Exception('adx input name failed1')
@@ -198,7 +219,7 @@ class AdxModel(WebOperation):
             # make sure the ad_name is included
             value = '//div/button[contains(text(),"include")]'
             el = self.find_by_xpath(value)
-            res = el.click() if el.text != 'include' else 'pass'
+            res = self.click(el) if el.text == 'include' else 'pass'
             if not res:
                 raise Exception('adx click the include failed')
 
@@ -242,21 +263,22 @@ class AdxModel(WebOperation):
         # base on the ad_name and floor ,set floor
         value = ''
         try:
-            floor_url = 'https://www.google.com/adx/Main.html#RULES/PricingRuleListPlace:mobile'
-            self.driver.get(floor_url)
+            # floor_url = 'https://www.google.com/adx/Main.html#RULES/PricingRuleListPlace:mobile'
+            # self.driver.get(floor_url)
+            self.go_to_rules_url()
             # load all the rules
             value = '//div/div[text()="Load All"]'
-            el = self.find_by_xpath(value)
+            el = self.find_by_xpath(value, timeout=30)
             res = self.click(el)
             if not res:
                 logger.error('load all button failed')
 
             value = '//a[text()="%s"]' % ad_name
-            el = self.find_by_xpath(value)
+            el = self.find_by_xpath(value, timeout=40)
             edit = el.find_element_by_xpath('../../div/div[text()="Edit"]')
 
             # scroll page to make the element visible
-            self.driver.execute_script("arguments[0].scrollIntoView(false);",edit)
+            # self.driver.execute_script("arguments[0].scrollIntoView(false);",edit)
             res = self.click(edit)
             if not res:
                 raise Exception('adx update floor scroll failed')
@@ -348,6 +370,8 @@ class AdxModel(WebOperation):
         self.go_to_home_url()
         exist_names = self.get_all_units()
         un_create_names = list(set(create_names) - set(exist_names.keys()))
+        logger.info('adx names{}'.format('|'.join(un_create_names)))
+        logger.info('length {}'.format(len(un_create_names)))
         for name in un_create_names:
             self.create(name)
         units = self.get_all_units()
@@ -360,10 +384,6 @@ class AdxModel(WebOperation):
 
         self.login_website()
         exist_floor = self.get_exist_floor()
-        count = 0
-        while not exist_floor and count < 3:
-            time.sleep(5)
-            exist_floor = self.get_exist_floor()
 
         tasks = data.get('task')
         for item in tasks:

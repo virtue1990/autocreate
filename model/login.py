@@ -15,6 +15,7 @@ class WebOperation(object):
 
     def click(self, element):
         try:
+            self.driver.execute_script("arguments[0].scrollIntoView(false);", element)
             time.sleep(1)
             element.click()
             return True
